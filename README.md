@@ -122,6 +122,155 @@ Useful for:
 * Supports iterative improvement
 
 ---
+This is a full AI customer support workflow system, not just a chatbot. It has four layers:
+
+Chat — answers customer queries
+Knowledge base — uploads and indexes company docs
+Escalation queue — hands off risky cases to humans
+Logs / analytics — stores every interaction and shows performance
+
+Walkthrough of all features
+1) Main chat page
+
+This is the customer-facing screen.
+
+What happens when a user asks something:
+
+the query is classified first
+greetings and very short inputs are handled separately
+off-topic inputs are redirected
+on-topic queries go through RAG
+the system retrieves relevant document chunks
+Gemini generates an answer using only that context
+confidence is scored
+escalation is triggered if needed
+the full interaction is logged
+
+2) Query classification
+
+The classifier checks:
+
+category: General, Technical, Billing, Account, Complaint, Legal, Security, Other
+is_sensitive
+is_off_topic
+is_greeting
+is_too_short
+
+It has rule-based shortcuts for:
+
+pure greetings like “hi”
+too-short queries like “?”
+
+Then Gemini classifies the rest.
+
+3) Document ingestion page
+
+This is where the knowledge base is built.
+
+It supports:
+
+PDF
+TXT
+MD
+
+It:
+
+extracts text
+splits documents into chunks
+embeds chunks locally
+saves them into FAISS
+persists the index for later use
+
+This is important because the AI only answers from uploaded docs, not general memory.
+
+4) Retrieval pipeline
+
+For normal queries, the system does:
+
+query expansion
+retrieval with MMR
+multi-query merging
+source ranking
+context block building
+
+This improves recall and reduces missing answers.
+
+5) Confidence scoring
+
+Confidence is not just one number from the model.
+
+It uses:
+
+retrieval quality
+top chunk score
+context density
+penalty if the model says it is unsure
+penalty if the response is too short
+
+That is a strong design choice because it makes escalation more reliable.
+
+6) Escalation logic
+
+The system escalates based on:
+
+low confidence
+legal or security category
+complaint category
+human request
+critical keywords
+high-risk keywords
+medium-risk keywords with low confidence
+repeated off-topic behavior
+
+Each escalation gets:
+
+severity: CRITICAL, HIGH, MEDIUM, LOW
+priority
+SLA deadline
+recommended action
+7) Escalation queue page
+
+This is the human side of the system.
+
+It lets a reviewer:
+
+see open tickets
+filter by severity/status
+update status
+add agent notes
+export the queue
+8) Logs page
+
+This is the observability layer.
+
+It shows:
+
+all interactions
+filters by escalation / feedback / query type / severity
+individual query and response inspection
+retrieved context
+source citations
+confidence breakdown
+latency and token usage
+performance charts
+escalation analysis
+
+This is one of the strongest parts of the project.
+
+9) Conversation memory
+
+The chat keeps a sliding window of recent turns so follow-up questions make sense.
+
+10) Feedback loop
+
+Users can mark answers:
+
+helpful
+not helpful
+
+That is logged and visible in analytics.
+
+---
 
 # System Workflow
 
@@ -134,7 +283,6 @@ User Query
 → Logging & Feedback
 
 ---
-
 # Architecture
 
 ## Components
